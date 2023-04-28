@@ -4,13 +4,31 @@
 #define MAG_PNI_RM3100_I2C_TASK_TASK_HPP
 
 #include "mag_pni_rm3100_i2c/TaskBase.hpp"
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <bitset>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <fcntl.h>
+#include <iostream>
+#include <linux/i2c-dev.h>
+#include <linux/i2c.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <vector>
+#include <base/Angle.hpp>
 
-namespace mag_pni_rm3100_i2c{
+namespace mag_pni_rm3100_i2c {
 
     /*! \class Task
-     * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
-     * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
-     * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
+     * \brief The task context provides and requires services. It uses an ExecutionEngine
+to perform its functions.
+     * Essential interfaces are operations, data flow ports and properties. These
+interfaces have been defined using the oroGen specification.
+     * In order to modify the interfaces you should (re)use oroGen and rely on the
+associated workflow.
      * Declare a new task context (i.e., a component)
 
 The corresponding C++ class can be edited in tasks/Task.hpp and
@@ -22,25 +40,33 @@ tasks/Task.cpp, and will be put in the mag_pni_rm3100_i2c namespace.
          task('custom_task_name','mag_pni_rm3100_i2c::Task')
      end
      \endverbatim
-     *  It can be dynamically adapted when the deployment is called with a prefix argument.
+     *  It can be dynamically adapted when the deployment is called with a prefix
+argument.
      */
-    class Task : public TaskBase
-    {
-	friend class TaskBase;
+    class Task : public TaskBase {
+        friend class TaskBase;
+
     protected:
-
-
+    private:
+        std::string m_i2c_bus;
+        int m_mag_address;
+        int m_fd;
+        double m_major_axis;
+        double m_minor_axis;
+        base::Angle m_ellipse_angle;
+        base::Vector2d m_ellipse_center;
 
     public:
         /** TaskContext constructor for Task
-         * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
-         * \param initial_state The initial TaskState of the TaskContext. Default is Stopped state.
+         * \param name Name of the task. This name needs to be unique to make it
+         * identifiable via nameservices. \param initial_state The initial TaskState of
+         * the TaskContext. Default is Stopped state.
          */
         Task(std::string const& name = "mag_pni_rm3100_i2c::Task");
 
         /** Default deconstructor of Task
          */
-	~Task();
+        ~Task();
 
         /** This hook is called by Orocos when the state machine transitions
          * from PreOperational to Stopped. If it returns false, then the
@@ -103,4 +129,3 @@ tasks/Task.cpp, and will be put in the mag_pni_rm3100_i2c namespace.
 }
 
 #endif
-
