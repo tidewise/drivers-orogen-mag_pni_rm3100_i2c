@@ -56,7 +56,6 @@ static void readRegister(int fd,
     msgs[0].len = 1;
     msgs[0].buf = &register_address;
 
-    uint8_t result[2];
     msgs[1].flags = 1;
     msgs[1].addr = mag_address;
     msgs[1].len = size;
