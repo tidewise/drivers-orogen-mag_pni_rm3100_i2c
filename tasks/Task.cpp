@@ -37,6 +37,7 @@ enum RegisterAddress {
 Task::Task(std::string const& name)
     : TaskBase(name)
 {
+    _nwu_magnetic2nwu.set(base::Angle::fromRad(0));
 }
 
 Task::~Task()
@@ -130,16 +131,6 @@ static Eigen::Vector2d ellipseToCircle(double minor_axis,
     return circle_point;
 }
 
-static base::samples::RigidBodyState convertToOrientationRBS(int32_t mag_x,
-    int32_t mag_y,
-    int32_t mag_z)
-{
-    base::samples::RigidBodyState rbs;
-    rbs.time = base::Time::now();
-    rbs.orientation = Eigen::AngleAxisd(atan2(mag_y, mag_x), Eigen::Vector3d::UnitZ());
-    return rbs;
-}
-
 /// The following lines are template definitions for the various state machine
 // hooks defined by Orocos::RTT. See Task.hpp for more detailed
 // documentation about them.
@@ -208,22 +199,22 @@ void Task::updateHook()
     Eigen::Affine3d a;
     int32_t mag_x = read_int24(mag);
     int32_t mag_y = read_int24(mag + 3);
-    int32_t mag_z = read_int24(mag + 6);
+    // int32_t mag_z = read_int24(mag + 6);
 
-    LOG_INFO_S << "Before calibration - mag_x:" << std::dec << mag_x << " mag_y:" << mag_y
-               << std::endl;
     Eigen::Vector2d circle_point = ellipseToCircle(m_minor_axis,
         m_major_axis,
         Eigen::Rotation2D<double>(m_ellipse_angle.getRad()),
         m_ellipse_center,
         Eigen::Vector2d(mag_x, mag_y));
-    LOG_INFO_S << "After calibration - mag_x:" << std::dec << circle_point[0]
-               << " mag_y:" << circle_point[1] << std::endl;
-    LOG_INFO_S << "Final calculated yaw : " << atan2(circle_point[1], circle_point[0])
-               << std::endl;
 
-    auto rbs_reference = convertToOrientationRBS(mag_x, mag_y, mag_z);
-    _mag2nwu_orientation.write(rbs_reference);
+    auto sensor2nwu_magnetic_heading = base::Angle::fromRad(atan2(mag_y, mag_x));
+    auto sensor2nwu_heading = _nwu_magnetic2nwu.get() + sensor2nwu_magnetic_heading;
+
+    base::samples::RigidBodyState rbs;
+    rbs.time = base::Time::now();
+    rbs.orientation =
+        Eigen::AngleAxisd(sensor2nwu_heading.getRad(), Eigen::Vector3d::UnitZ());
+    _sensor2nwu_yaw.write(rbs);
 }
 void Task::errorHook()
 {
