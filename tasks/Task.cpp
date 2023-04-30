@@ -138,14 +138,14 @@ bool Task::configureHook()
     if (m_fd == -1) {
         std::cerr << "Cannot open " << m_i2c_bus << " for reading and writing"
                   << std::endl;
-        return 1;
+        return false;
     }
 
     int ret = ioctl(m_fd, I2C_TIMEOUT, 10);
     if (ret == -1) {
         std::cerr << "timeout ioctl failed" << std::endl;
         close(m_fd);
-        return 1;
+        return false;
     }
     uint8_t cmm_value = 0;
     writeRegister(m_fd, m_mag_address, registerAddress::CMM_ADDR, &cmm_value, 1);
