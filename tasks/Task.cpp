@@ -214,4 +214,7 @@ void Task::stopHook()
 void Task::cleanupHook()
 {
     TaskBase::cleanupHook();
+
+    close(m_fd);
+    m_fd = -1;
 }
