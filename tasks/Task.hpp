@@ -4,20 +4,6 @@
 #define MAG_PNI_RM3100_I2C_TASK_TASK_HPP
 
 #include "mag_pni_rm3100_i2c/TaskBase.hpp"
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <bitset>
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <fcntl.h>
-#include <iostream>
-#include <linux/i2c-dev.h>
-#include <linux/i2c.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <vector>
 #include <base/Angle.hpp>
 
 namespace mag_pni_rm3100_i2c {

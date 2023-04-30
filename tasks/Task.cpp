@@ -1,11 +1,38 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "Task.hpp"
-#include "mag_pni_rm3100_i2cTypes.hpp"
 #include <base-logging/Logging.hpp>
-#include <base/samples/RigidBodyState.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <base/Angle.hpp>
+#include <bitset>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <fcntl.h>
+#include <iostream>
+#include <linux/i2c-dev.h>
+#include <linux/i2c.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <vector>
 
 using namespace mag_pni_rm3100_i2c;
+
+enum RegisterAddress {
+    POLL_ADDR = 0x00,
+    CMM_ADDR = 0x01,
+    STATUS_ADDR = 0x34,
+    HANDSHAKE_ADDR = 0x35,
+    MEASUREMENT_X_AXIS_2_ADDR = 0x24,
+    MEASUREMENT_X_AXIS_1_ADDR = 0x25,
+    MEASUREMENT_X_AXIS_0_ADDR = 0x26,
+    MEASUREMENT_Y_AXIS_2_ADDR = 0x27,
+    MEASUREMENT_Y_AXIS_1_ADDR = 0x28,
+    MEASUREMENT_Y_AXIS_0_ADDR = 0x29
+};
 
 Task::Task(std::string const& name)
     : TaskBase(name)
@@ -143,14 +170,14 @@ bool Task::configureHook()
         return false;
     }
     uint8_t cmm_value = 0;
-    writeRegister(m_fd, m_mag_address, registerAddress::CMM_ADDR, &cmm_value, 1);
+    writeRegister(m_fd, m_mag_address, RegisterAddress::CMM_ADDR, &cmm_value, 1);
     uint8_t poll_value = 0b01110000;
-    writeRegister(m_fd, m_mag_address, registerAddress::POLL_ADDR, &poll_value, 1);
+    writeRegister(m_fd, m_mag_address, RegisterAddress::POLL_ADDR, &poll_value, 1);
 
     uint8_t handshake = 3;
-    writeRegister(m_fd, m_mag_address, registerAddress::HANDSHAKE_ADDR, &handshake, 1);
+    writeRegister(m_fd, m_mag_address, RegisterAddress::HANDSHAKE_ADDR, &handshake, 1);
     handshake = 0;
-    readRegister(m_fd, m_mag_address, registerAddress::HANDSHAKE_ADDR, &handshake, 1);
+    readRegister(m_fd, m_mag_address, RegisterAddress::HANDSHAKE_ADDR, &handshake, 1);
     LOG_INFO_S << "handshake: " << std::hex << static_cast<int>(handshake) << std::endl;
 
     return true;
@@ -166,18 +193,18 @@ void Task::updateHook()
     TaskBase::updateHook();
 
     uint8_t poll_value = 0b01110000;
-    writeRegister(m_fd, m_mag_address, registerAddress::POLL_ADDR, &poll_value, 1);
+    writeRegister(m_fd, m_mag_address, RegisterAddress::POLL_ADDR, &poll_value, 1);
 
     while (true) {
         uint8_t status;
-        readRegister(m_fd, m_mag_address, registerAddress::STATUS_ADDR, &status, 1);
+        readRegister(m_fd, m_mag_address, RegisterAddress::STATUS_ADDR, &status, 1);
         if (status & 0x80) {
             break;
         }
     }
 
     uint8_t mag[9];
-    readRegister(m_fd, m_mag_address, registerAddress::MEASUREMENT_X_AXIS_2_ADDR, mag, 9);
+    readRegister(m_fd, m_mag_address, RegisterAddress::MEASUREMENT_X_AXIS_2_ADDR, mag, 9);
     Eigen::Affine3d a;
     int32_t mag_x = read_int24(mag);
     int32_t mag_y = read_int24(mag + 3);
