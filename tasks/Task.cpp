@@ -109,12 +109,7 @@ static base::samples::RigidBodyState convertToOrientationRBS(int32_t mag_x,
 {
     base::samples::RigidBodyState rbs;
     rbs.time = base::Time::now();
-    rbs.orientation = Eigen::Quaterniond(
-        Eigen::AngleAxisd(atan2(mag_y, mag_x), Eigen::Vector3d::UnitZ()) *
-        Eigen::AngleAxisd(atan2(mag_z, mag_x), // TODO verify the pitch
-            Eigen::Vector3d::UnitY()) *
-        Eigen::AngleAxisd(atan2(mag_z, mag_y), // TODO verify the roll
-            Eigen::Vector3d::UnitX()));
+    rbs.orientation = Eigen::AngleAxisd(atan2(mag_y, mag_x), Eigen::Vector3d::UnitZ());
     return rbs;
 }
 
