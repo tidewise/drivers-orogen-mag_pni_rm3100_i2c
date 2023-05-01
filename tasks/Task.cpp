@@ -109,28 +109,6 @@ static int32_t read_int24(uint8_t* msb)
     return reinterpret_cast<int32_t&>(uvalue);
 }
 
-static Eigen::Vector2d ellipseToCircle(double minor_axis,
-    double major_axis,
-    Eigen::Rotation2D<double> rot,
-    Eigen::Vector2d ellipse_center,
-    Eigen::Vector2d ellipse_point)
-{
-    // put center ellipse point
-    ellipse_point -= ellipse_center;
-
-    // Compute the scaling factor to transform the ellipse to a circle
-    Eigen::Vector2d scale(1 / major_axis, 1 / minor_axis);
-
-    Eigen::Vector2d circle_point;
-    // Rotate the point
-    circle_point = rot * ellipse_point;
-    // Scale it
-    circle_point = circle_point.array() * scale.array();
-    // Rotate it back
-    circle_point = rot.inverse() * circle_point;
-    return circle_point;
-}
-
 /// The following lines are template definitions for the various state machine
 // hooks defined by Orocos::RTT. See Task.hpp for more detailed
 // documentation about them.
@@ -142,10 +120,9 @@ bool Task::configureHook()
 
     m_i2c_bus = _i2c_bus.get();
     m_mag_address = _mag_address.get();
-    m_major_axis = _major_axis.get();
-    m_minor_axis = _minor_axis.get();
-    m_ellipse_angle = _ellipse_angle.get();
-    m_ellipse_center = _ellipse_center.get();
+    m_distortion = _magnetic_distortion_compensation.get();
+    m_distortion_rot = Eigen::Rotation2D<float>(m_distortion.angle.getRad());
+    m_distortion_rot_inverse = m_distortion_rot.inverse();
 
     m_fd = open(m_i2c_bus.c_str(), O_RDWR);
     if (m_fd == -1) {
@@ -201,13 +178,10 @@ void Task::updateHook()
     int32_t mag_y = read_int24(mag + 3);
     // int32_t mag_z = read_int24(mag + 6);
 
-    Eigen::Vector2d circle_point = ellipseToCircle(m_minor_axis,
-        m_major_axis,
-        Eigen::Rotation2D<double>(m_ellipse_angle.getRad()),
-        m_ellipse_center,
-        Eigen::Vector2d(mag_x, mag_y));
+    Eigen::Vector2f compensated_xy = compensateDistortion(Eigen::Vector2f(mag_x, mag_y));
 
-    auto sensor2nwu_magnetic_heading = base::Angle::fromRad(atan2(mag_y, mag_x));
+    auto sensor2nwu_magnetic_heading =
+        base::Angle::fromRad(atan2(compensated_xy.y(), compensated_xy.x()));
     auto sensor2nwu_heading = _nwu_magnetic2nwu.get() + sensor2nwu_magnetic_heading;
 
     base::samples::RigidBodyState rbs;
@@ -230,4 +204,21 @@ void Task::cleanupHook()
 
     close(m_fd);
     m_fd = -1;
+}
+
+Eigen::Vector2f Task::compensateDistortion(Eigen::Vector2f const& measurement)
+{
+    // put center ellipse point
+    Eigen::Vector2f p = measurement - m_distortion.center.cast<float>();
+
+    // Compute the scaling factor to transform the ellipse to a circle
+    Eigen::Vector2f scale(1.0f / m_distortion.major_axis, 1.0f / m_distortion.minor_axis);
+
+    // Rotate the point
+    p = m_distortion_rot * p;
+    // Scale it
+    p = p.array() * scale.array();
+    // Rotate it back
+    p = m_distortion_rot_inverse * p;
+    return p;
 }

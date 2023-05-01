@@ -15,18 +15,9 @@ task_context "Task" do
     property "mag_address", "int", 0x20
     # Magnetic declination, added to mag2nwu_orientation
     property "nwu_magnetic2nwu", "/base/Angle"
-    # The major_axis of the ellipse before calibration(mag_x vs mag_y grapth)
-    # This value was calculated to be 5994.242
-    property "major_axis", "double", 5994.242
-    # The minor_axis of the ellipse before calibration(mag_x vs mag_y grapth)
-    # This value was calculated to be 4381.799
-    property "minor_axis", "double", 4381.799
-    # The angle of the ellipse before calibration(mag_x vs mag_y grapth)
-    # This value was calculated to be -0.406267 rad
-    property "ellipse_angle", "/base/Angle"
-    # The center of the ellipse before calibration(mag_x vs mag_y grapth)
-    # This value was calculated to be (6769.717, -2303.238) rad
-    property "ellipse_center", "/base/Vector2d"
+    # Magnetic distortion compensation
+    property "magnetic_distortion_compensation",
+             "/mag_pni_rm3100_i2c/MagneticDistortionCompensationConfig"
 
     # Heading computed from the X/Y magnetic field measurements (i.e. assuming
     # horizontal)
