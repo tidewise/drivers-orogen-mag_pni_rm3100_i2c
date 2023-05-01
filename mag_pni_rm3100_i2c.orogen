@@ -12,7 +12,7 @@ task_context "Task" do
     # The i2c bus
     property "i2c_bus", "/std/string", "/dev/i2c-2"
     # The magnetometer's i2c address
-    property "mag_address", "int", 0x20
+    property "i2c_address", "int", 0x20
     # Magnetic declination, added to mag2nwu_orientation
     property "nwu_magnetic2nwu", "/base/Angle"
     # Magnetic distortion compensation
@@ -27,4 +27,3 @@ task_context "Task" do
 
     periodic 0.1
 end
-

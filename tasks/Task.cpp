@@ -45,7 +45,7 @@ Task::~Task()
 }
 
 static bool writeRegister(int fd,
-    int mag_address,
+    int i2c_address,
     uint8_t register_address,
     uint8_t* data,
     int size)
@@ -56,7 +56,7 @@ static bool writeRegister(int fd,
 
     i2c_msg config_msg;
     config_msg.flags = 0;
-    config_msg.addr = mag_address;
+    config_msg.addr = i2c_address;
     config_msg.len = buffer.size();
     config_msg.buf = buffer.data();
 
@@ -72,7 +72,7 @@ static bool writeRegister(int fd,
 }
 
 static void readRegister(int fd,
-    int mag_address,
+    int i2c_address,
     uint8_t register_address,
     uint8_t* buffer,
     int size)
@@ -80,12 +80,12 @@ static void readRegister(int fd,
     i2c_msg msgs[2];
 
     msgs[0].flags = 0;
-    msgs[0].addr = mag_address;
+    msgs[0].addr = i2c_address;
     msgs[0].len = 1;
     msgs[0].buf = &register_address;
 
     msgs[1].flags = 1;
-    msgs[1].addr = mag_address;
+    msgs[1].addr = i2c_address;
     msgs[1].len = size;
     msgs[1].buf = buffer;
 
@@ -119,7 +119,7 @@ bool Task::configureHook()
         return false;
 
     m_i2c_bus = _i2c_bus.get();
-    m_mag_address = _mag_address.get();
+    m_i2c_address = _i2c_address.get();
     m_distortion = _magnetic_distortion_compensation.get();
     m_distortion_rot = Eigen::Rotation2D<float>(m_distortion.angle.getRad());
     m_distortion_rot_inverse = m_distortion_rot.inverse();
@@ -138,14 +138,14 @@ bool Task::configureHook()
         return false;
     }
     uint8_t cmm_value = 0;
-    writeRegister(m_fd, m_mag_address, RegisterAddress::CMM_ADDR, &cmm_value, 1);
+    writeRegister(m_fd, m_i2c_address, RegisterAddress::CMM_ADDR, &cmm_value, 1);
     uint8_t poll_value = 0b01110000;
-    writeRegister(m_fd, m_mag_address, RegisterAddress::POLL_ADDR, &poll_value, 1);
+    writeRegister(m_fd, m_i2c_address, RegisterAddress::POLL_ADDR, &poll_value, 1);
 
     uint8_t handshake = 3;
-    writeRegister(m_fd, m_mag_address, RegisterAddress::HANDSHAKE_ADDR, &handshake, 1);
+    writeRegister(m_fd, m_i2c_address, RegisterAddress::HANDSHAKE_ADDR, &handshake, 1);
     handshake = 0;
-    readRegister(m_fd, m_mag_address, RegisterAddress::HANDSHAKE_ADDR, &handshake, 1);
+    readRegister(m_fd, m_i2c_address, RegisterAddress::HANDSHAKE_ADDR, &handshake, 1);
     LOG_INFO_S << "handshake: " << std::hex << static_cast<int>(handshake) << std::endl;
 
     return true;
@@ -161,18 +161,18 @@ void Task::updateHook()
     TaskBase::updateHook();
 
     uint8_t poll_value = 0b01110000;
-    writeRegister(m_fd, m_mag_address, RegisterAddress::POLL_ADDR, &poll_value, 1);
+    writeRegister(m_fd, m_i2c_address, RegisterAddress::POLL_ADDR, &poll_value, 1);
 
     while (true) {
         uint8_t status;
-        readRegister(m_fd, m_mag_address, RegisterAddress::STATUS_ADDR, &status, 1);
+        readRegister(m_fd, m_i2c_address, RegisterAddress::STATUS_ADDR, &status, 1);
         if (status & 0x80) {
             break;
         }
     }
 
     uint8_t mag[9];
-    readRegister(m_fd, m_mag_address, RegisterAddress::MEASUREMENT_X_AXIS_2_ADDR, mag, 9);
+    readRegister(m_fd, m_i2c_address, RegisterAddress::MEASUREMENT_X_AXIS_2_ADDR, mag, 9);
     Eigen::Affine3d a;
     int32_t mag_x = read_int24(mag);
     int32_t mag_y = read_int24(mag + 3);

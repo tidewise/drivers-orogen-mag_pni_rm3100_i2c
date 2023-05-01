@@ -35,8 +35,8 @@ argument.
     protected:
     private:
         std::string m_i2c_bus;
-        int m_mag_address;
-        int m_fd;
+        int m_i2c_address = 0;
+        int m_fd = -1;
 
         MagneticDistortionCompensationConfig m_distortion;
         Eigen::Rotation2D<float> m_distortion_rot;
