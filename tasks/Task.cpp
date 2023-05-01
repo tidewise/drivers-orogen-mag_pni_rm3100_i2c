@@ -176,7 +176,7 @@ void Task::updateHook()
     Eigen::Affine3d a;
     int32_t mag_x = read_int24(mag);
     int32_t mag_y = read_int24(mag + 3);
-    // int32_t mag_z = read_int24(mag + 6);
+    int32_t mag_z = read_int24(mag + 6);
 
     Eigen::Vector2f compensated_xy = compensateDistortion(Eigen::Vector2f(mag_x, mag_y));
 
@@ -184,8 +184,19 @@ void Task::updateHook()
         base::Angle::fromRad(atan2(compensated_xy.y(), compensated_xy.x()));
     auto sensor2nwu_heading = _nwu_magnetic2nwu.get() + sensor2nwu_magnetic_heading;
 
+    base::Time now = base::Time::now();
+
+    base::samples::IMUSensors compensated_mags;
+    compensated_mags.time = now;
+    compensated_mags.acc = base::unknown<base::Vector3d>();
+    compensated_mags.gyro = base::unknown<base::Vector3d>();
+    compensated_mags.mag = base::Vector3d(compensated_xy.x(),
+        compensated_xy.y(),
+        mag_z / m_distortion.major_axis);
+    _compensated_magnetometers.write(compensated_mags);
+
     base::samples::RigidBodyState rbs;
-    rbs.time = base::Time::now();
+    rbs.time = now;
     rbs.orientation =
         Eigen::AngleAxisd(sensor2nwu_heading.getRad(), Eigen::Vector3d::UnitZ());
     _sensor2nwu_yaw.write(rbs);

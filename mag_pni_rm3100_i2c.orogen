@@ -19,6 +19,9 @@ task_context "Task" do
     property "magnetic_distortion_compensation",
              "/mag_pni_rm3100_i2c/MagneticDistortionCompensationConfig"
 
+    # Magnetometer readings with distortion compensation applied
+    output_port "compensated_magnetometers", "/base/samples/IMUSensors"
+
     # Heading computed from the X/Y magnetic field measurements (i.e. assuming
     # horizontal)
     #
