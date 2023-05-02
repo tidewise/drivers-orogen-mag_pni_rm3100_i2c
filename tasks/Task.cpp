@@ -219,7 +219,7 @@ void Task::cleanupHook()
 
 Eigen::Vector2f Task::compensateDistortion(Eigen::Vector2f const& measurement)
 {
-    // put center ellipse point
+    // Put center ellipse point
     Eigen::Vector2f p = measurement - m_distortion.center.cast<float>();
 
     // Compute the scaling factor to transform the ellipse to a circle
