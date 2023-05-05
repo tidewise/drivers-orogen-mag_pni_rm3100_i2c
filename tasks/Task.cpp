@@ -226,10 +226,10 @@ Eigen::Vector2f Task::compensateDistortion(Eigen::Vector2f const& measurement)
     Eigen::Vector2f scale(1.0f / m_distortion.major_axis, 1.0f / m_distortion.minor_axis);
 
     // Rotate the point
-    p = m_distortion_rot * p;
+    p = m_distortion_rot_inverse * p;
     // Scale it
     p = p.array() * scale.array();
     // Rotate it back
-    p = m_distortion_rot_inverse * p;
+    p = m_distortion_rot * p;
     return p;
 }
